@@ -1,0 +1,182 @@
+{
+  "realm": "finsight",
+  "displayName": "FinSight MCP",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+
+  "roles": {
+    "realm": [
+      { "name": "mcp-agent",   "description": "LLM agent — can call MCP tools" },
+      { "name": "mcp-admin",   "description": "Platform admin" },
+      { "name": "mcp-auditor", "description": "Read-only audit access" }
+    ]
+  },
+
+  "clientScopes": [
+    {
+      "name": "payment:read",
+      "description": "Read payment data and routing intelligence",
+      "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "true" }
+    },
+    {
+      "name": "payment:write",
+      "description": "Initiate and modify payments",
+      "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "true" }
+    },
+    {
+      "name": "fraud:read",
+      "description": "Read fraud scores and signals",
+      "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "true" }
+    },
+    {
+      "name": "fraud:write",
+      "description": "Update fraud rules and cases",
+      "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "true" }
+    },
+    {
+      "name": "banking:read",
+      "description": "Read open banking account data",
+      "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "true" }
+    },
+    {
+      "name": "banking:write",
+      "description": "Initiate open banking payments",
+      "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "true" }
+    },
+    {
+      "name": "system:read",
+      "description": "Read system metadata",
+      "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "true" }
+    }
+  ],
+
+  "clients": [
+    {
+      "clientId": "finsight-mcp-server",
+      "name": "FinSight MCP Server",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "mcp-server-secret-change-in-prod",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect",
+      "defaultClientScopes": ["system:read"],
+      "protocolMappers": [
+        {
+          "name": "tenant-id-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tenant_id",
+            "claim.name": "tenant_id",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "finsight-agent-client",
+      "name": "FinSight Agent Client",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "agent-client-secret-change-in-prod",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "defaultClientScopes": ["system:read"],
+      "optionalClientScopes": [
+        "payment:read", "payment:write",
+        "fraud:read", "fraud:write",
+        "banking:read", "banking:write"
+      ],
+      "protocolMappers": [
+        {
+          "name": "tenant-id-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tenant_id",
+            "claim.name": "tenant_id",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+
+  "users": [
+    {
+      "username": "agent-payments",
+      "firstName": "Payments",
+      "lastName": "Agent",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "agent-payments@finsight.local",
+      "requiredActions": [],
+      "credentials": [{ "type": "password", "value": "agent123", "temporary": false }],
+      "realmRoles": ["mcp-agent"],
+      "attributes": { "tenant_id": ["tenant-demo-001"] }
+    },
+    {
+      "username": "agent-fraud",
+      "firstName": "Fraud",
+      "lastName": "Agent",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "agent-fraud@finsight.local",
+      "requiredActions": [],
+      "credentials": [{ "type": "password", "value": "agent123", "temporary": false }],
+      "realmRoles": ["mcp-agent"],
+      "attributes": { "tenant_id": ["tenant-demo-001"] }
+    },
+    {
+      "username": "agent-full",
+      "firstName": "Full",
+      "lastName": "Agent",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "agent-full@finsight.local",
+      "requiredActions": [],
+      "credentials": [{ "type": "password", "value": "agent123", "temporary": false }],
+      "realmRoles": ["mcp-agent"],
+      "attributes": { "tenant_id": ["tenant-demo-001"] }
+    },
+    {
+      "username": "admin",
+      "firstName": "Platform",
+      "lastName": "Admin",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "admin@finsight.local",
+      "requiredActions": [],
+      "credentials": [{ "type": "password", "value": "admin123", "temporary": false }],
+      "realmRoles": ["mcp-admin", "mcp-agent"],
+      "attributes": { "tenant_id": ["tenant-demo-001"] }
+    }
+  ]
+}

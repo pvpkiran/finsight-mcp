@@ -1,0 +1,140 @@
+# ─────────────────────────────────────────────────────────────
+#  FinSight MCP Server — application configuration
+# ─────────────────────────────────────────────────────────────
+
+spring:
+  profiles:
+    active: mock
+
+  application:
+    name: finsight-mcp
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:finsight}
+    username: ${DB_USER:finsight}
+    password: ${DB_PASSWORD:finsight_secret}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      pool-name: finsight-hikari
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    validate-on-migrate: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis_secret}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 4
+
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:29092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+    consumer:
+      group-id: finsight-mcp
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.finsight.*"
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/finsight}
+
+  ai:
+    mcp:
+      server:
+        name: finsight-mcp-server
+        version: 0.0.1
+        protocol: STREAMABLE
+        type: SYNC
+        base-path: /mcp
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,env
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+
+logging:
+  level:
+    com.finsight: DEBUG
+    org.springframework.ai.mcp: INFO
+    org.springframework.security: INFO
+    org.flywaydb: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level [%X{traceId},%X{spanId}] %logger{36} - %msg%n"
+
+finsight:
+  idempotency:
+    ttl-hours: 24
+  async-jobs:
+    ttl-days: 7
+  audit:
+    enabled: true
+  tenant:
+    header: X-Tenant-ID
+
+---
+# ── Profile: stripe ───────────────────────────────────────────
+spring:
+  config:
+    activate:
+      on-profile: stripe
+
+finsight:
+  stripe:
+    api-key: ${STRIPE_API_KEY}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+
+---
+# ── Profile: nordigen ─────────────────────────────────────────
+spring:
+  config:
+    activate:
+      on-profile: nordigen
+
+finsight:
+  nordigen:
+    secret-id: ${NORDIGEN_SECRET_ID}
+    secret-key: ${NORDIGEN_SECRET_KEY}
+    base-url: https://bankaccountdata.gocardless.com/api/v2
