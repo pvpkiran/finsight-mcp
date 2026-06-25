@@ -1,0 +1,19 @@
+# ─────────────────────────────────────────────────────────────
+#  FinSight MCP — mock profile
+#  Disables all infra autoconfiguration
+#  Everything runs in-memory, zero external dependencies
+# ─────────────────────────────────────────────────────────────
+
+spring:
+  flyway:
+    enabled: false
+  data:
+    jpa:
+      repositories:
+        enabled: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration
+      - org.springframework.boot.kafka.autoconfigure.KafkaAutoConfiguration

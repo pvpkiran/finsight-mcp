@@ -19,7 +19,7 @@ import java.util.Map;
  * Implements Berlin Group / PSD2 account model.
  */
 @Component
-@Profile("mock")
+@Profile("!stripe & !nordigen")
 public class MockOpenBankingAdapter implements OpenBankingPort {
 
     private static final Map<String, BankAccount> ACCOUNTS = Map.of(

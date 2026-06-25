@@ -126,6 +126,11 @@ keycloak-ready:
 app:
 	@cd finsight-mcp-server && ../mvnw spring-boot:run -Dspring-boot.run.profiles=mock
 
+## Start app with real infra (local profile only)
+app-local:
+	@cd finsight-mcp-server && ../mvnw spring-boot:run \
+	  -Dspring-boot.run.profiles=local
+
 ## Start infra first, then app
 app-full: infra app
 

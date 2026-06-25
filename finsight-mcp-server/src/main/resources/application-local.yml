@@ -1,0 +1,68 @@
+# ─────────────────────────────────────────────────────────────
+#  FinSight MCP — local profile
+#  Wires real PostgreSQL, Redis, Kafka
+#  Still uses mock financial adapters (Stripe/Nordigen in Sprint 3)
+#
+#  Start with:
+#    make app-local
+#  Or:
+#    ../mvnw spring-boot:run -Dspring-boot.run.profiles=local
+# ─────────────────────────────────────────────────────────────
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:finsight}
+    username: ${DB_USER:finsight}
+    password: ${DB_PASSWORD:finsight_secret}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      pool-name: finsight-hikari
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    validate-on-migrate: true
+    schemas: finsight,audit
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis_secret}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 4
+
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:29092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+    consumer:
+      group-id: finsight-mcp
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.finsight.*"
+
+logging:
+  level:
+    com.finsight: DEBUG
+    org.flywaydb: INFO
+    org.springframework.data.redis: DEBUG

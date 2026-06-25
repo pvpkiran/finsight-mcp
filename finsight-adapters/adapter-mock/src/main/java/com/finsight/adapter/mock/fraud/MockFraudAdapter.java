@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Designed so MCP tool demos show interesting results across risk levels.
  */
 @Component
-@Profile("mock")
+@Profile("!stripe & !nordigen")
 public class MockFraudAdapter implements FraudDataPort {
 
     // In-memory velocity store: key = "dimension:value", value = transaction count

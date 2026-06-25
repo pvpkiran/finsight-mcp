@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Profile;
  * Swap profile → different config class → different adapters.
  */
 @Configuration
-@Profile("mock")
+@Profile("!stripe & !nordigen")
 public class MockAdapterConfig {
 
     @Bean
