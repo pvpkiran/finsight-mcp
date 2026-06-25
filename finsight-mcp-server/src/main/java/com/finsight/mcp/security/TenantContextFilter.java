@@ -41,7 +41,6 @@ public class TenantContextFilter extends OncePerRequestFilter {
             }
             filterChain.doFilter(request, response);
         } finally {
-            // Always clear — thread may be reused from pool
             TenantContext.clear();
         }
     }

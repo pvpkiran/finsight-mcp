@@ -129,18 +129,6 @@ app:
 ## Start infra first, then app
 app-full: infra app
 
-# ── MCP session helper ────────────────────────────────────────
-# Internal target — initializes MCP session and returns session ID
-# Usage: SESSION=$(make -s mcp-session TOKEN=<token>)
-mcp-session:
-	@curl -sf -X POST http://localhost:8080/mcp \
-	  -H "Authorization: Bearer $(TOKEN)" \
-	  -H "Content-Type: application/json" \
-	  -H "Accept: text/event-stream, application/json" \
-	  -D - \
-	  -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"finsight-cli","version":"1.0"}}}' \
-	  2>/dev/null | grep -i "mcp-session-id" | awk '{print $2}' | tr -d '\r'
-
 # ── MCP testing ───────────────────────────────────────────────
 
 ## List all registered MCP tools
