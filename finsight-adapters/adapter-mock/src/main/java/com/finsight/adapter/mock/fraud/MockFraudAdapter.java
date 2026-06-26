@@ -6,7 +6,6 @@ import com.finsight.core.domain.valueobject.FraudRiskLevel;
 import com.finsight.core.domain.valueobject.TenantId;
 import com.finsight.core.domain.valueobject.TransactionId;
 import com.finsight.core.port.FraudDataPort;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -22,7 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Designed so MCP tool demos show interesting results across risk levels.
  */
 @Component
-@Profile("!stripe & !nordigen")
 public class MockFraudAdapter implements FraudDataPort {
 
     // In-memory velocity store: key = "dimension:value", value = transaction count

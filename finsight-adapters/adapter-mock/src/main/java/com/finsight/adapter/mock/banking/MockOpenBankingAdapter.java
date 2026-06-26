@@ -4,7 +4,6 @@ import com.finsight.core.domain.model.BankAccount;
 import com.finsight.core.domain.valueobject.Money;
 import com.finsight.core.domain.valueobject.TenantId;
 import com.finsight.core.port.OpenBankingPort;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -19,7 +18,6 @@ import java.util.Map;
  * Implements Berlin Group / PSD2 account model.
  */
 @Component
-@Profile("!stripe & !nordigen")
 public class MockOpenBankingAdapter implements OpenBankingPort {
 
     private static final Map<String, BankAccount> ACCOUNTS = Map.of(

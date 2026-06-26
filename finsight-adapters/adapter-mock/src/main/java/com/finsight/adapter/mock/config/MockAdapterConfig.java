@@ -1,4 +1,4 @@
-package com.finsight.adapter.mock;
+package com.finsight.adapter.mock.config;
 
 import com.finsight.adapter.mock.fraud.MockFraudAdapter;
 import com.finsight.adapter.mock.banking.MockOpenBankingAdapter;
@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Profile;
  * Swap profile → different config class → different adapters.
  */
 @Configuration
-@Profile("!stripe & !nordigen")
+@Profile("!stripe")
 public class MockAdapterConfig {
 
     @Bean

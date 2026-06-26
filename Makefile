@@ -7,7 +7,12 @@
         token-full token-payments token-fraud \
         decode-token keycloak-ready app app-full help \
         mcp-session mcp-list-tools mcp-test-decline mcp-test-fraud \
-        mcp-test-banks mcp-test-route mcp-test-account mcp-test-all
+        mcp-test-banks mcp-test-route mcp-test-account mcp-test-all \
+        stripe-create-payment stripe-create-declined stripe-test-get \
+        stripe-test-decline stripe-test-full
+
+# ── Environment ───────────────────────────────────────────────
+STRIPE_API_KEY ?= $(shell echo $$STRIPE_API_KEY)
 
 # ── Infra ─────────────────────────────────────────────────────
 
@@ -122,14 +127,14 @@ keycloak-ready:
 
 # ── App ───────────────────────────────────────────────────────
 
-## Start the Spring Boot app (mock profile)
+## Start the Spring Boot app (local profile)
 app:
-	@cd finsight-mcp-server && ../mvnw spring-boot:run -Dspring-boot.run.profiles=mock
+	@cd finsight-mcp-server && ../mvnw spring-boot:run -Dspring-boot.run.profiles=local
 
-## Start app with real infra (local profile only)
-app-local:
+## Start app with Stripe real payments (local + stripe profiles)
+app-stripe:
 	@cd finsight-mcp-server && ../mvnw spring-boot:run \
-	  -Dspring-boot.run.profiles=local
+	  -Dspring-boot.run.profiles=local,stripe
 
 ## Start infra first, then app
 app-full: infra app
@@ -247,6 +252,116 @@ mcp-test-account:
 ## Run all MCP tests in sequence
 mcp-test-all: mcp-list-tools mcp-test-decline mcp-test-fraud mcp-test-banks mcp-test-route mcp-test-account
 
+
+# ── Stripe testing ────────────────────────────────────────────
+
+## Create a test PaymentIntent in Stripe sandbox
+stripe-create-payment:
+	@echo "Creating test PaymentIntent in Stripe sandbox..."
+	@curl -s https://api.stripe.com/v1/payment_intents \
+	  -u $(STRIPE_API_KEY): \
+	  -d amount=8999 \
+	  -d currency=eur \
+	  -d "payment_method_types[]=card" \
+	  -d "metadata[merchant_name]=Zalando" \
+	  -d "metadata[country_code]=DE" \
+	  | jq '{id, amount, currency, status}'
+
+## Create and decline a test PaymentIntent (insufficient funds)
+stripe-create-declined:
+	@echo "Creating declined PaymentIntent in Stripe sandbox..."
+	@PI_ID=$$(curl -s https://api.stripe.com/v1/payment_intents \
+	  -u $(STRIPE_API_KEY): \
+	  -d amount=8999 \
+	  -d currency=eur \
+	  -d "payment_method_types[]=card" \
+	  -d "metadata[merchant_name]=Zalando" \
+	  -d "metadata[country_code]=DE" \
+	  | jq -r '.id') && \
+	echo "PaymentIntent created: $$PI_ID" && \
+	curl -s https://api.stripe.com/v1/payment_intents/$$PI_ID/confirm \
+	  -u $(STRIPE_API_KEY): \
+	  -d "payment_method=pm_card_visa_chargeDeclinedInsufficientFunds" \
+	  | jq '{id: .error.payment_intent.id, status: .error.payment_intent.status, decline_code: .error.decline_code}'
+
+## Test getTransaction with a real Stripe PaymentIntent ID
+## Usage: make stripe-test-get PI=pi_xxx
+stripe-test-get:
+	@TOKEN=$$($(MAKE) -s token-full) && \
+	SESSION=$$(curl -sf -X POST http://localhost:8080/mcp \
+	  -H "Authorization: Bearer $$TOKEN" \
+	  -H "Content-Type: application/json" \
+	  -H "Accept: text/event-stream, application/json" \
+	  -D - \
+	  -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"finsight-cli","version":"1.0"}}}' \
+	  2>/dev/null | grep -i "mcp-session-id" | awk '{print $$2}' | tr -d '\r') && \
+	curl -s -X POST http://localhost:8080/mcp \
+	  -H "Authorization: Bearer $$TOKEN" \
+	  -H "Content-Type: application/json" \
+	  -H "Accept: text/event-stream, application/json" \
+	  -H "Mcp-Session-Id: $$SESSION" \
+	  -d "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"getTransaction\",\"arguments\":{\"transactionId\":\"$(PI)\"}}}" \
+	  | grep "^data:" | sed 's/^data://' | jq '.result'
+
+## Test explainDecline with a real Stripe PaymentIntent ID
+## Usage: make stripe-test-decline PI=pi_xxx
+stripe-test-decline:
+	@TOKEN=$$($(MAKE) -s token-full) && \
+	SESSION=$$(curl -sf -X POST http://localhost:8080/mcp \
+	  -H "Authorization: Bearer $$TOKEN" \
+	  -H "Content-Type: application/json" \
+	  -H "Accept: text/event-stream, application/json" \
+	  -D - \
+	  -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"finsight-cli","version":"1.0"}}}' \
+	  2>/dev/null | grep -i "mcp-session-id" | awk '{print $$2}' | tr -d '\r') && \
+	curl -s -X POST http://localhost:8080/mcp \
+	  -H "Authorization: Bearer $$TOKEN" \
+	  -H "Content-Type: application/json" \
+	  -H "Accept: text/event-stream, application/json" \
+	  -H "Mcp-Session-Id: $$SESSION" \
+	  -d "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"explainDecline\",\"arguments\":{\"transactionId\":\"$(PI)\"}}}" \
+	  | grep "^data:" | sed 's/^data://' | jq '.result'
+
+## Full Stripe test flow — create declined payment then explain it
+stripe-test-full:
+	@echo "🔄 Creating declined PaymentIntent..."
+	@PI_ID=$$(curl -s https://api.stripe.com/v1/payment_intents \
+	  -u $(STRIPE_API_KEY): \
+	  -d amount=8999 \
+	  -d currency=eur \
+	  -d "payment_method_types[]=card" \
+	  -d "metadata[merchant_name]=Zalando" \
+	  -d "metadata[country_code]=DE" \
+	  | jq -r '.id') && \
+	curl -s https://api.stripe.com/v1/payment_intents/$$PI_ID/confirm \
+	  -u $(STRIPE_API_KEY): \
+	  -d "payment_method=pm_card_visa_chargeDeclinedInsufficientFunds" > /dev/null && \
+	echo "✓  PaymentIntent created and declined: $$PI_ID" && \
+	TOKEN=$$($(MAKE) -s token-full) && \
+	SESSION=$$(curl -sf -X POST http://localhost:8080/mcp \
+	  -H "Authorization: Bearer $$TOKEN" \
+	  -H "Content-Type: application/json" \
+	  -H "Accept: text/event-stream, application/json" \
+	  -D - \
+	  -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"finsight-cli","version":"1.0"}}}' \
+	  2>/dev/null | grep -i "mcp-session-id" | awk '{print $$2}' | tr -d '\r') && \
+	echo "📋 Transaction details:" && \
+	curl -s -X POST http://localhost:8080/mcp \
+	  -H "Authorization: Bearer $$TOKEN" \
+	  -H "Content-Type: application/json" \
+	  -H "Accept: text/event-stream, application/json" \
+	  -H "Mcp-Session-Id: $$SESSION" \
+	  -d "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"getTransaction\",\"arguments\":{\"transactionId\":\"$$PI_ID\"}}}" \
+	  | grep "^data:" | sed 's/^data://' | jq '.result' && \
+	echo "💳 Decline explanation:" && \
+	curl -s -X POST http://localhost:8080/mcp \
+	  -H "Authorization: Bearer $$TOKEN" \
+	  -H "Content-Type: application/json" \
+	  -H "Accept: text/event-stream, application/json" \
+	  -H "Mcp-Session-Id: $$SESSION" \
+	  -d "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"explainDecline\",\"arguments\":{\"transactionId\":\"$$PI_ID\"}}}" \
+	  | grep "^data:" | sed 's/^data://' | jq '.result'
+
 # ── Help ──────────────────────────────────────────────────────
 
 help:
@@ -275,7 +390,7 @@ help:
 	@echo "    make keycloak-ready  Check Keycloak health"
 	@echo ""
 	@echo "  App:"
-	@echo "    make app             Start Spring Boot (mock profile)"
+	@echo "    make app             Start Spring Boot (local profile)"
 	@echo "    make app-full        Start infra + app"
 	@echo ""
 	@echo "  MCP Testing (auto session handshake):"
@@ -287,3 +402,8 @@ help:
 	@echo "    make mcp-test-account  fetchAccountData (acc-de-001 Deutsche Bank)"
 	@echo "    make mcp-test-all      Run all 6 tests in sequence"
 	@echo ""
+	@echo "  Stripe Testing:"
+	@echo "    make stripe-test-full          Full flow create decline explain"
+	@echo "    make stripe-create-declined    Create a declined PaymentIntent"
+	@echo "    make stripe-test-get PI=pi_xx  Test getTransaction"
+	@echo "    make stripe-test-decline PI=xx Test explainDecline"

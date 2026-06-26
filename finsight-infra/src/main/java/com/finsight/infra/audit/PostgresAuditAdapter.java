@@ -18,7 +18,7 @@ import java.util.Optional;
  * This ensures we always have a complete audit trail including failures.
  */
 @Component
-@Profile("!mock")
+@Profile("local")
 @RequiredArgsConstructor
 @Slf4j
 public class PostgresAuditAdapter implements AuditPort {
