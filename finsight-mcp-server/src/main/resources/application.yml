@@ -3,9 +3,6 @@
 # ─────────────────────────────────────────────────────────────
 
 spring:
-  profiles:
-    active: mock
-
   application:
     name: finsight-mcp
 

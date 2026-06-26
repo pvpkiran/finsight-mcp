@@ -1,6 +1,10 @@
 package com.finsight.mcp.audit;
 
+import com.finsight.core.domain.valueobject.TenantId;
+import com.finsight.core.event.ToolInvocationEvent;
 import com.finsight.core.port.AuditPort;
+import com.finsight.core.port.IdempotencyPort;
+import com.finsight.infra.kafka.ToolInvocationEventPublisher;
 import com.finsight.mcp.security.TenantContext;
 import io.micrometer.tracing.Tracer;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +19,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.HexFormat;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * AOP aspect that intercepts all @Tool annotated methods and writes
@@ -41,6 +47,12 @@ public class ToolAuditAspect {
     @Autowired(required = false)
     private Tracer tracer;
 
+    @Autowired(required = false)
+    private ToolInvocationEventPublisher eventPublisher;
+
+    @Autowired(required = false)
+    private IdempotencyPort idempotencyPort;
+
     public ToolAuditAspect(AuditPort auditPort) {
         this.auditPort = auditPort;
     }
@@ -54,53 +66,82 @@ public class ToolAuditAspect {
 
         String inputHash = hashInputs(joinPoint.getArgs());
         String traceId = currentTraceId();
+        String eventId = UUID.randomUUID().toString();
 
+        TenantId tenantId = TenantContext.get() != null
+                ? TenantContext.get()
+                : TenantId.of("unknown");
+
+        // ── 1. Check Redis idempotency cache ──────────────────
+        if (idempotencyPort != null) {
+            IdempotencyPort.IdempotencyKey key =
+                    new IdempotencyPort.IdempotencyKey(tenantId, toolName, inputHash);
+            Optional<IdempotencyPort.CachedResponse> cached = idempotencyPort.get(key);
+            if (cached.isPresent()) {
+                long durationMs = System.currentTimeMillis() - startMs;
+                log.debug("[IDEMPOTENCY] Cache hit tool={} tenant={}", toolName, tenantId);
+                publishEvent(eventId, toolName, tenantId, traceId, durationMs, true, null);
+                // Return cached result — Spring AI expects the raw object
+                return cached.get().responseBody();
+            }
+        }
+
+        // ── 2. Execute the tool ───────────────────────────────
         try {
             Object result = joinPoint.proceed();
             long durationMs = System.currentTimeMillis() - startMs;
 
+            // ── 3. Store in Redis cache ───────────────────────
+            if (idempotencyPort != null && result != null) {
+                IdempotencyPort.IdempotencyKey key =
+                        new IdempotencyPort.IdempotencyKey(tenantId, toolName, inputHash);
+                idempotencyPort.store(key,
+                        new IdempotencyPort.CachedResponse(result.toString(), "SUCCESS", durationMs));
+            }
+
+            // ── 4. Write audit record ─────────────────────────
             auditPort.record(AuditPort.AuditEvent.success(
-                    toolName,
-                    TenantContext.require(),
-                    null,        // sessionId — not available at this level
-                    traceId,
-                    inputHash,
-                    durationMs
-            ));
+                    toolName, tenantId, null, traceId, inputHash, durationMs));
+
+            // ── 5. Publish Kafka event ────────────────────────
+            publishEvent(eventId, toolName, tenantId, traceId, durationMs, false, null);
 
             return result;
 
         } catch (Exception e) {
             long durationMs = System.currentTimeMillis() - startMs;
-
             auditPort.record(AuditPort.AuditEvent.failure(
-                    toolName,
-                    TenantContext.get() != null
-                            ? TenantContext.get()
-                            : com.finsight.core.domain.valueobject.TenantId.of("unknown"),
-                    null,
-                    traceId,
-                    inputHash,
-                    e.getClass().getSimpleName(),
-                    durationMs
-            ));
-
+                    toolName, tenantId, null, traceId, inputHash,
+                    e.getClass().getSimpleName(), durationMs));
+            publishEvent(eventId, toolName, tenantId, traceId, durationMs, false,
+                    e.getClass().getSimpleName());
             throw e;
         }
     }
 
-    /**
-     * SHA-256 hash of the input arguments.
-     * We never store raw params — they may contain PII (IBANs, card numbers etc.)
-     * The hash lets us detect duplicate calls without exposing the data.
-     */
+    private void publishEvent(String eventId, String toolName, TenantId tenantId,
+                              String traceId, long durationMs,
+                              boolean cached, String errorCode) {
+        if (eventPublisher == null) return;
+        try {
+            ToolInvocationEvent event = errorCode == null
+                    ? ToolInvocationEvent.success(eventId, toolName, tenantId,
+                    traceId, durationMs, cached)
+                    : ToolInvocationEvent.failure(eventId, toolName, tenantId,
+                    traceId, durationMs, errorCode);
+            eventPublisher.publish(event);
+        } catch (Exception e) {
+            log.error("[KAFKA] Error publishing event: {}", e.getMessage());
+        }
+    }
+
     private String hashInputs(Object[] args) {
         if (args == null || args.length == 0) return "no-args";
         try {
             String raw = Arrays.toString(args);
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(raw.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash).substring(0, 16); // first 16 chars enough
+            return HexFormat.of().formatHex(hash).substring(0, 16);
         } catch (Exception e) {
             return "hash-error";
         }

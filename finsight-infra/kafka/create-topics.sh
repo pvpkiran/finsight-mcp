@@ -35,6 +35,8 @@ create_topic "finsight.banking.dlq"             1  2592000000
 create_topic "finsight.system.async-jobs"        2  604800000
 create_topic "finsight.system.audit"             2  2592000000
 create_topic "finsight.system.dlq"              1  2592000000
+create_topic "finsight.tool.invocations"         3  604800000
+create_topic "finsight.payment.events"           3  604800000
 
 echo "All topics created."
 kafka-topics --bootstrap-server $BOOTSTRAP --list

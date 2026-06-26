@@ -37,6 +37,15 @@
             <groupId>com.finsight</groupId>
             <artifactId>adapter-nordigen</artifactId>
         </dependency>
+        <!-- Flyway — explicit dependency needed for Spring Boot autoconfiguration -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
 
         <!-- ── Spring AI MCP Server (Streamable HTTP / WebMVC) ───────── -->
         <dependency>
