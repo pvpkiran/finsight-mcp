@@ -362,10 +362,27 @@ mcp-test-consent:
 	  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"checkConsent","arguments":{"accountId":"acc-de-001"}}}' \
 	  | grep "^data:" | sed 's/^data://' | jq '.result'
 
+mcp-test-all-accounts:
+	@TOKEN=$$($(MAKE) -s token-full) && \
+	SESSION=$$(curl -sf -X POST http://localhost:8080/mcp \
+	  -H "Authorization: Bearer $$TOKEN" \
+	  -H "Content-Type: application/json" \
+	  -H "Accept: text/event-stream, application/json" \
+	  -D - \
+	  -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"finsight-cli","version":"1.0"}}}' \
+	  2>/dev/null | grep -i "mcp-session-id" | awk '{print $$2}' | tr -d '\r') && \
+	curl -s -X POST http://localhost:8080/mcp \
+	  -H "Authorization: Bearer $$TOKEN" \
+	  -H "Content-Type: application/json" \
+	  -H "Accept: text/event-stream, application/json" \
+	  -H "Mcp-Session-Id: $$SESSION" \
+	  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"fetchAllAccounts","arguments":{"requisitionId":"req-demo-001"}}}' \
+	  | grep "^data:" | sed 's/^data://' | jq '.result'
+
 ## Run all MCP tests in sequence
 mcp-test-all: mcp-list-tools mcp-test-get-txn mcp-test-decline mcp-test-reconcile \
               mcp-test-fraud mcp-test-fraud-explain mcp-test-velocity \
-              mcp-test-banks mcp-test-route mcp-test-account mcp-test-consent
+              mcp-test-banks mcp-test-route mcp-test-account mcp-test-consent mcp-test-all-accounts
 # ── Stripe testing ────────────────────────────────────────────
 
 ## Create a test PaymentIntent in Stripe sandbox
