@@ -23,7 +23,7 @@
         <module>finsight-core</module>
         <module>finsight-adapters/adapter-mock</module>
         <module>finsight-adapters/adapter-stripe</module>
-        <module>finsight-adapters/adapter-nordigen</module>
+        <module>finsight-adapters/adapter-pgvector</module>
         <module>finsight-infra</module>
         <module>finsight-mcp-server</module>
     </modules>
@@ -78,15 +78,14 @@
             </dependency>
             <dependency>
                 <groupId>com.finsight</groupId>
-                <artifactId>adapter-nordigen</artifactId>
+                <artifactId>finsight-infra</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.finsight</groupId>
-                <artifactId>finsight-infra</artifactId>
+                <artifactId>adapter-pgvector</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
             <!-- Third-party -->
             <dependency>
                 <groupId>org.flywaydb</groupId>

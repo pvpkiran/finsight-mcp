@@ -86,6 +86,14 @@ public class FraudService {
         return fraudDataPort.findSimilarFraudPatterns(transaction, topK);
     }
 
+    /**
+     * Check transaction velocity for an IP, card, or device.
+     * Called by the checkVelocity MCP tool.
+     */
+    public FraudDataPort.VelocityResult checkVelocity(FraudDataPort.VelocityRequest request) {
+        return fraudDataPort.checkVelocity(request);
+    }
+
     public record FraudDecision(
             FraudScore score,
             boolean shouldBlock,

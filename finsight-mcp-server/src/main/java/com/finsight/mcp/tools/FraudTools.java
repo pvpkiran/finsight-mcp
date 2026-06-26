@@ -2,16 +2,14 @@ package com.finsight.mcp.tools;
 
 import com.finsight.core.domain.model.FraudScore;
 import com.finsight.core.domain.model.Transaction;
-import com.finsight.core.domain.valueobject.Money;
 import com.finsight.core.service.FraudService;
+import com.finsight.core.service.PaymentService;
 import com.finsight.mcp.security.TenantContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.List;
 
 /**
@@ -21,11 +19,11 @@ import java.util.List;
 public class FraudTools {
 
     private final FraudService fraudService;
-    private final PaymentTools paymentTools;
+    private final PaymentService paymentService;
 
-    public FraudTools(FraudService fraudService, PaymentTools paymentTools) {
+    public FraudTools(FraudService fraudService, PaymentService paymentService) {
         this.fraudService = fraudService;
-        this.paymentTools = paymentTools;
+        this.paymentService = paymentService;
     }
 
     @Tool(name = "scoreTransaction",
@@ -42,8 +40,7 @@ public class FraudTools {
             String transactionId
     ) {
         var tenantId = TenantContext.require();
-        // Reuse PaymentTools to fetch transaction — avoids duplicate port calls
-        Transaction tx = buildMockTransactionForScoring(transactionId, tenantId.value());
+        Transaction tx = paymentService.getTransaction(transactionId, tenantId);
         FraudScore score = fraudService.score(tx);
         return FraudScoreResult.from(score);
     }
@@ -59,10 +56,9 @@ public class FraudTools {
     @PreAuthorize("hasAuthority('SCOPE_fraud:read')")
     public String explainFraudSignals(
             @ToolParam(description = "Transaction ID to explain signals for")
-            String transactionId
-    ) {
+            String transactionId) {
         var tenantId = TenantContext.require();
-        Transaction tx = buildMockTransactionForScoring(transactionId, tenantId.value());
+        Transaction tx = paymentService.getTransaction(transactionId, tenantId);
         FraudScore score = fraudService.score(tx);
         return fraudService.explainSignals(score);
     }
@@ -80,15 +76,19 @@ public class FraudTools {
             @ToolParam(description = "The value to check, e.g. IP address or card fingerprint")
             String value,
             @ToolParam(description = "Time window in minutes, e.g. 15")
-            int windowMinutes
-    ) {
+            int windowMinutes) {
         var tenantId = TenantContext.require();
-        var result = fraudService.findSimilarPatterns(
-                buildMockTransactionForScoring("txn-001", tenantId.value()), 3);
-
-        // Direct velocity check via fraud service
-        return new VelocityResult(dimension, value, windowMinutes,
-                result.size(), result.size() > 3, 3);
+        var request = new com.finsight.core.port.FraudDataPort.VelocityRequest(
+                dimension, value, windowMinutes, tenantId);
+        var result = fraudService.checkVelocity(request);
+        return new VelocityResult(
+                result.dimension(),
+                result.value(),
+                result.windowMinutes(),
+                result.transactionCount(),
+                result.exceedsThreshold(),
+                result.threshold()
+        );
     }
 
     // ── Result records ─────────────────────────────────────────────────
@@ -125,21 +125,4 @@ public class FraudTools {
     public record VelocityResult(
             String dimension, String value, int windowMinutes,
             int count, boolean exceedsThreshold, int threshold) {}
-
-    // ── Helper — builds a transaction for scoring from mock store ──────
-    private Transaction buildMockTransactionForScoring(String txnId, String tenantId) {
-        // In real implementation, fetch from PaymentPort
-        // For now build a representative transaction for the mock
-        return new Transaction(
-                com.finsight.core.domain.valueobject.TransactionId.of(txnId),
-                com.finsight.core.domain.valueobject.TenantId.of(tenantId),
-                Money.of(new BigDecimal("3200.00"), "EUR"),
-                "merchant-us-001", "Apple Store", "CARD",
-                "adyen-us", "chase",
-                Transaction.TransactionStatus.DECLINED,
-                "card_velocity_exceeded",
-                "US", "203.0.113.5",
-                Instant.now().minusSeconds(300), null
-        );
-    }
 }

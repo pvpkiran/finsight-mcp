@@ -35,7 +35,7 @@
         </dependency>
         <dependency>
             <groupId>com.finsight</groupId>
-            <artifactId>adapter-nordigen</artifactId>
+            <artifactId>adapter-pgvector</artifactId>
         </dependency>
         <!-- Flyway — explicit dependency needed for Spring Boot autoconfiguration -->
         <dependency>

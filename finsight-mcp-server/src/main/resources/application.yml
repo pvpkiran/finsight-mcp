@@ -125,14 +125,15 @@ finsight:
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
 
 ---
-# ── Profile: nordigen ─────────────────────────────────────────
+# ── Profile: pgvector ─────────────────────────────────────────
+---
 spring:
   config:
     activate:
-      on-profile: nordigen
+      on-profile: pgvector
 
-finsight:
-  nordigen:
-    secret-id: ${NORDIGEN_SECRET_ID}
-    secret-key: ${NORDIGEN_SECRET_KEY}
-    base-url: https://bankaccountdata.gocardless.com/api/v2
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      embedding:
+        model: nomic-embed-text

@@ -1,7 +1,7 @@
 # ─────────────────────────────────────────────────────────────
 #  FinSight MCP — local profile
 #  Wires real PostgreSQL, Redis, Kafka
-#  Still uses mock financial adapters (Stripe/Nordigen in Sprint 3)
+#  Still uses mock financial adapters (Stripe)
 #
 #  Start with:
 #    make app-local

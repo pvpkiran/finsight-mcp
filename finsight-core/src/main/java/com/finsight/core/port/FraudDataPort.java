@@ -11,7 +11,7 @@ import java.util.List;
  * Outbound port for fraud detection operations.
  *
  * Implementations:
- *   - MockFraudAdapter  (@Profile("mock"))  — deterministic in-memory scoring
+ *   - MockFraudAdapter  (@Profile("local"))  — deterministic in-memory scoring
  *
  * The fraud engine is self-contained — no external API needed.
  * Real scoring uses pgvector embeddings + Redis velocity checks.

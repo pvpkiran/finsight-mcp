@@ -12,7 +12,7 @@ import java.util.Optional;
  * Outbound port for payment operations.
  *
  * Implementations:
- *   - MockPaymentAdapter  (@Profile("mock"))  — zero external deps
+ *   - MockPaymentAdapter  (@Profile("local"))  — zero external deps
  *   - StripePaymentAdapter (@Profile("stripe")) — Stripe sandbox/live
  *
  * The domain core ONLY depends on this interface, never on the adapter.

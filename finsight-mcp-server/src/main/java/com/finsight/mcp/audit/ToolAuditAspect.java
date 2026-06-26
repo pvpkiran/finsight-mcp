@@ -1,5 +1,6 @@
 package com.finsight.mcp.audit;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.finsight.core.domain.valueobject.TenantId;
 import com.finsight.core.event.ToolInvocationEvent;
 import com.finsight.core.port.AuditPort;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,19 +25,23 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * AOP aspect that intercepts all @Tool annotated methods and writes
- * audit records to AuditPort before and after execution.
+ * AOP aspect that intercepts all @Tool annotated methods and:
  *
- * This approach means zero changes to individual tool classes —
- * every new tool automatically gets audited just by having @Tool.
+ *   1. Checks Redis idempotency cache — if hit, deserializes and returns cached response
+ *   2. Executes the tool
+ *   3. Serializes result to JSON and stores in Redis (24h TTL)
+ *   4. Writes audit record to PostgreSQL
+ *   5. Publishes ToolInvocationEvent to Kafka
  *
- * Records:
- *   - Tool name and version
- *   - Tenant ID from TenantContext
- *   - SHA-256 hash of input params (never raw PII)
- *   - Execution status (SUCCESS/FAILURE)
- *   - Duration in milliseconds
- *   - OpenTelemetry trace ID for correlation
+ * Idempotency design:
+ *   - Key = SHA-256(tenantId + toolName + inputArgs)
+ *   - Value = JSON-serialized tool response
+ *   - On cache hit, deserialize using the method's actual return type
+ *   - This correctly handles complex return types (FraudScoreResult, etc.)
+ *   - If deserialization fails, fall through to re-execute the tool
+ *
+ * Zero changes needed to individual tool classes — every @Tool method
+ * automatically gets audit logging, idempotency, and Kafka events.
  */
 @Aspect
 @Component
@@ -43,6 +49,7 @@ import java.util.UUID;
 public class ToolAuditAspect {
 
     private final AuditPort auditPort;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Autowired(required = false)
     private Tracer tracer;
@@ -78,11 +85,23 @@ public class ToolAuditAspect {
                     new IdempotencyPort.IdempotencyKey(tenantId, toolName, inputHash);
             Optional<IdempotencyPort.CachedResponse> cached = idempotencyPort.get(key);
             if (cached.isPresent()) {
-                long durationMs = System.currentTimeMillis() - startMs;
-                log.debug("[IDEMPOTENCY] Cache hit tool={} tenant={}", toolName, tenantId);
-                publishEvent(eventId, toolName, tenantId, traceId, durationMs, true, null);
-                // Return cached result — Spring AI expects the raw object
-                return cached.get().responseBody();
+                try {
+                    // Deserialize using the method's actual return type
+                    MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+                    Class<?> returnType = signature.getReturnType();
+                    Object deserialized = objectMapper.readValue(
+                            cached.get().responseBody(), returnType);
+                    long durationMs = System.currentTimeMillis() - startMs;
+                    log.debug("[IDEMPOTENCY] Cache hit tool={} tenant={} returnType={}",
+                            toolName, tenantId, returnType.getSimpleName());
+                    publishEvent(eventId, toolName, tenantId, traceId, durationMs, true, null);
+                    return deserialized;
+                } catch (Exception e) {
+                    // Deserialization failed — fall through to re-execute
+                    // This handles cases where the return type changed after a deploy
+                    log.warn("[IDEMPOTENCY] Cache hit but deserialization failed for tool={}, " +
+                            "re-executing: {}", toolName, e.getMessage());
+                }
             }
         }
 
@@ -91,12 +110,21 @@ public class ToolAuditAspect {
             Object result = joinPoint.proceed();
             long durationMs = System.currentTimeMillis() - startMs;
 
-            // ── 3. Store in Redis cache ───────────────────────
+            // ── 3. Serialize result to JSON and store in Redis ─
             if (idempotencyPort != null && result != null) {
-                IdempotencyPort.IdempotencyKey key =
-                        new IdempotencyPort.IdempotencyKey(tenantId, toolName, inputHash);
-                idempotencyPort.store(key,
-                        new IdempotencyPort.CachedResponse(result.toString(), "SUCCESS", durationMs));
+                try {
+                    String json = objectMapper.writeValueAsString(result);
+                    IdempotencyPort.IdempotencyKey key =
+                            new IdempotencyPort.IdempotencyKey(tenantId, toolName, inputHash);
+                    idempotencyPort.store(key,
+                            new IdempotencyPort.CachedResponse(json, "SUCCESS", durationMs));
+                    log.debug("[IDEMPOTENCY] Cached tool={} tenant={} durationMs={}",
+                            toolName, tenantId, durationMs);
+                } catch (Exception e) {
+                    // Serialization failed — log but don't fail the tool call
+                    log.warn("[IDEMPOTENCY] Could not serialize result for caching tool={}: {}",
+                            toolName, e.getMessage());
+                }
             }
 
             // ── 4. Write audit record ─────────────────────────
@@ -135,6 +163,11 @@ public class ToolAuditAspect {
         }
     }
 
+    /**
+     * SHA-256 hash of the input arguments.
+     * We never store raw params — they may contain PII (IBANs, card numbers etc.)
+     * The hash lets us detect duplicate calls without exposing the data.
+     */
     private String hashInputs(Object[] args) {
         if (args == null || args.length == 0) return "no-args";
         try {

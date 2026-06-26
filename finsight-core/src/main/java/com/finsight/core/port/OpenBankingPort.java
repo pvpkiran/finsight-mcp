@@ -9,12 +9,7 @@ import java.util.List;
 /**
  * Outbound port for open banking / PSD2 operations.
  *
- * Implementations:
- *   - MockOpenBankingAdapter   (@Profile("mock"))     — Berlin Group stub
- *   - NordigenOpenBankingAdapter (@Profile("nordigen")) — GoCardless sandbox/live
- *
  * Note: real PSD2 requires an AISP/PISP license in the EU.
- * For portfolio/freelance demos, use Nordigen sandbox — free, no license needed.
  */
 public interface OpenBankingPort {
 
