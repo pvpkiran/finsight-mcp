@@ -116,15 +116,17 @@ services:
       - finsight-net
     restart: "no"
 
-  # ── Keycloak 24 ───────────────────────────────────────────────────────
+  # ── Keycloak 25 ───────────────────────────────────────────────────────
   keycloak:
-    image: quay.io/keycloak/keycloak:24.0.3
+    image: quay.io/keycloak/keycloak:25.0.6
     container_name: finsight-keycloak
     restart: unless-stopped
     command: >
       start-dev
       --import-realm
       --http-port=8180
+      --hostname=https://8fb0-84-144-71-232.ngrok-free.app
+      --proxy-headers=xforwarded
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin_secret
@@ -135,9 +137,13 @@ services:
       KC_DB_SCHEMA: keycloak
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_PROXY_HEADERS: xforwarded
+      KC_PROXY: edge
       KC_HEALTH_ENABLED: "true"
     ports:
       - "8180:8180"
+      - "9000:9000"
     volumes:
       - ./finsight-infra/keycloak/finsight-realm.json:/opt/keycloak/data/import/finsight-realm.json:ro
     depends_on:
@@ -146,11 +152,24 @@ services:
     networks:
       - finsight-net
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8180/health/ready || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/health/ready || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 15
       start_period: 60s
+
+  # ── Keycloak setup ───────────────────────────────────────────────────────
+  keycloak-setup:
+    image: curlimages/curl:latest
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    volumes:
+      - ./setup-keycloak.sh:/setup-keycloak.sh
+    entrypoint: [ "/bin/sh", "/setup-keycloak.sh" ]
+    networks:
+      - finsight-net
+    restart: "no"
 
   # ── Kafka UI ──────────────────────────────────────────────────────────
   kafka-ui:

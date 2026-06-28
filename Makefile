@@ -41,7 +41,7 @@ infra:
 	@sleep 5
 	@docker-compose up -d keycloak kafka-ui redis-ui
 	@echo "⏳ Waiting for Keycloak (this takes ~60s)..."
-	@until curl -sf http://localhost:8180/health/ready > /dev/null 2>&1; do sleep 5; done
+	@until curl -sf http://localhost:9000/health/ready > /dev/null 2>&1; do sleep 5; done
 	@echo "✓  Keycloak ready"
 	@echo ""
 	@echo "✅ All services running!"
@@ -123,7 +123,7 @@ decode-token:
 
 ## Check Keycloak health
 keycloak-ready:
-	@curl -sf http://localhost:8180/health/ready | jq .
+	@curl -sf http://localhost:9000/health/ready | jq .
 
 # ── App ───────────────────────────────────────────────────────
 
@@ -139,6 +139,10 @@ app-stripe:
 app-pgvector:
 	@cd finsight-mcp-server && ../mvnw spring-boot:run \
 	  -Dspring-boot.run.profiles=local,pgvector
+
+app-claude:
+	@cd finsight-mcp-server && ../mvnw spring-boot:run \
+	  -Dspring-boot.run.profiles=local,pgvector,claude
 
 ## Start infra first, then app
 app-full: infra app

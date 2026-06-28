@@ -1,6 +1,7 @@
 package com.finsight.mcp.config;
 
 import com.finsight.mcp.security.TenantContextFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -13,11 +14,16 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
+import java.net.URI;
+import java.util.List;
+
 /**
  * Security configuration for the FinSight MCP server.
  *
  * - All /mcp/** endpoints require a valid JWT
  * - Actuator health/prometheus endpoints are public
+ * - OAuth 2.1 discovery endpoints are public
+ * - Token proxy endpoint is public (auth happens at Keycloak)
  * - Stateless — no sessions (JWT only)
  * - TenantContextFilter runs after JWT validation
  */
@@ -25,6 +31,9 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    @Value("${finsight.public-url:https://57af-84-144-71-117.ngrok-free.app}")
+    private String publicUrl;
 
     private final TenantContextFilter tenantContextFilter;
 
@@ -37,24 +46,45 @@ public class SecurityConfig {
         http
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .csrf(AbstractHttpConfigurer::disable)   // stateless API — no CSRF needed
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
+                        // Public endpoints — infrastructure and OAuth discovery
                         .requestMatchers(
                                 "/actuator/health",
                                 "/actuator/health/**",
                                 "/actuator/info",
-                                "/actuator/prometheus"
+                                "/actuator/prometheus",
+                                // OAuth 2.1 discovery endpoints (RFC 9728, RFC 8414)
+                                "/.well-known/oauth-protected-resource",
+                                "/.well-known/oauth-authorization-server",
+                                "/.well-known/openid-configuration",
+                                // Token proxy — strips RFC 8707 'resource' parameter
+                                // before forwarding to Keycloak (auth happens at Keycloak)
+                                "/realms/*/protocol/openid-connect/token"
                         ).permitAll()
-                        // MCP endpoint requires authentication
                         .requestMatchers("/mcp/**").authenticated()
-                        // Everything else requires authentication
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                        .protectedResourceMetadata(metadata -> metadata
+                                .protectedResourceMetadataCustomizer(prm ->
+                                        prm
+                                                .resource(URI.create(publicUrl).toString())
+                                                .authorizationServers(servers -> {
+                                                    servers.clear();
+                                                    servers.add(publicUrl);
+                                                })
+                                                .scopes(scopes -> {
+                                                    scopes.clear();
+                                                    scopes.addAll(List.of(
+                                                            "payment:read", "payment:write",
+                                                            "fraud:read", "banking:read"
+                                                    ));
+                                                })
+                                )
+                        )
                 )
-                // Inject tenant context after JWT is validated
                 .addFilterAfter(tenantContextFilter, BearerTokenAuthenticationFilter.class);
 
         return http.build();

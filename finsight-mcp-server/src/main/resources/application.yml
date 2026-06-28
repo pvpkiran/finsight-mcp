@@ -61,8 +61,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/finsight}
-
+          issuer-uri: https://8fb0-84-144-71-232.ngrok-free.app/realms/finsight
+          jwk-set-uri: http://localhost:8180/realms/finsight/protocol/openid-connect/certs
   ai:
     mcp:
       server:
@@ -110,7 +110,7 @@ finsight:
     enabled: true
   tenant:
     header: X-Tenant-ID
-
+  public-url: ${PUBLIC_URL:https://57af-84-144-71-117.ngrok-free.app}
 ---
 # ── Profile: stripe ───────────────────────────────────────────
 ---
@@ -137,3 +137,16 @@ spring:
       base-url: http://localhost:11434
       embedding:
         model: nomic-embed-text
+
+---
+# ── Profile: claude ─────────────────────────────────────────
+---
+spring:
+  config:
+    activate:
+      on-profile: claude
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://8fb0-84-144-71-232.ngrok-free.app/realms/finsight/protocol/openid-connect/certs
