@@ -1,8 +1,8 @@
-package com.finsight.adapter.mock.config;
+package com.finsight.mcp.config;
 
 import com.finsight.adapter.mock.fraud.MockFraudAdapter;
-import com.finsight.adapter.mock.banking.MockOpenBankingAdapter;
 import com.finsight.adapter.mock.payment.MockPaymentAdapter;
+import com.finsight.adapter.obp.ObpOpenBankingAdapter;
 import com.finsight.core.service.FraudService;
 import com.finsight.core.service.OpenBankingService;
 import com.finsight.core.service.PaymentService;
@@ -11,16 +11,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 /**
- * Wires domain services with mock adapters.
- * Active only under the "mock" Spring profile.
- *
- * This is the only place in the codebase where domain services
- * are coupled to a specific adapter implementation.
- * Swap profile → different config class → different adapters.
+ * Service wiring for 'obp' profile.
+ * Real OBP open banking adapter, mock payment and fraud.
  */
 @Configuration
-@Profile("!stripe & !pgvector &!obp")
-public class MockAdapterConfig {
+@Profile("obp & !stripe & !pgvector")
+public class ObpServicesConfig {
 
     @Bean
     public PaymentService paymentService(MockPaymentAdapter adapter) {
@@ -33,7 +29,7 @@ public class MockAdapterConfig {
     }
 
     @Bean
-    public OpenBankingService openBankingService(MockOpenBankingAdapter adapter) {
+    public OpenBankingService openBankingService(ObpOpenBankingAdapter adapter) {
         return new OpenBankingService(adapter);
     }
 }

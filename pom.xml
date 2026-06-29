@@ -24,6 +24,7 @@
         <module>finsight-adapters/adapter-mock</module>
         <module>finsight-adapters/adapter-stripe</module>
         <module>finsight-adapters/adapter-pgvector</module>
+        <module>finsight-adapters/adapter-obp</module>
         <module>finsight-infra</module>
         <module>finsight-mcp-server</module>
     </modules>
@@ -84,6 +85,11 @@
             <dependency>
                 <groupId>com.finsight</groupId>
                 <artifactId>adapter-pgvector</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.finsight</groupId>
+                <artifactId>adapter-obp</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- Third-party -->

@@ -140,6 +140,10 @@ app-pgvector:
 	@cd finsight-mcp-server && ../mvnw spring-boot:run \
 	  -Dspring-boot.run.profiles=local,pgvector
 
+app-obp:
+	@cd finsight-mcp-server && ../mvnw spring-boot:run \
+	  -Dspring-boot.run.profiles=local,obp
+
 app-claude:
 	@cd finsight-mcp-server && ../mvnw spring-boot:run \
 	  -Dspring-boot.run.profiles=local,pgvector,claude
@@ -273,7 +277,7 @@ mcp-test-account:
 	  -H "Content-Type: application/json" \
 	  -H "Accept: text/event-stream, application/json" \
 	  -H "Mcp-Session-Id: $$SESSION" \
-	  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"fetchAccountData","arguments":{"accountId":"acc-de-001"}}}' \
+	  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"fetchAccountData","arguments":{"accountId":"test-bank/fgarcia_account1"}}}' \
 	  | grep "^data:" | sed 's/^data://' | jq '.result'
 
 ## Test getTransaction tool — txn-001
@@ -363,7 +367,7 @@ mcp-test-consent:
 	  -H "Content-Type: application/json" \
 	  -H "Accept: text/event-stream, application/json" \
 	  -H "Mcp-Session-Id: $$SESSION" \
-	  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"checkConsent","arguments":{"accountId":"acc-de-001"}}}' \
+	  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"checkConsent","arguments":{"accountId":"test-bank/fgarcia_account1"}}}' \
 	  | grep "^data:" | sed 's/^data://' | jq '.result'
 
 mcp-test-all-accounts:
@@ -380,7 +384,7 @@ mcp-test-all-accounts:
 	  -H "Content-Type: application/json" \
 	  -H "Accept: text/event-stream, application/json" \
 	  -H "Mcp-Session-Id: $$SESSION" \
-	  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"fetchAllAccounts","arguments":{"requisitionId":"req-demo-001"}}}' \
+	  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"fetchAllAccounts","arguments":{"requisitionId":"test-bank"}}}' \
 	  | grep "^data:" | sed 's/^data://' | jq '.result'
 
 ## Run all MCP tests in sequence

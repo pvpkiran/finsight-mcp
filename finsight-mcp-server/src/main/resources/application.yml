@@ -111,6 +111,10 @@ finsight:
   tenant:
     header: X-Tenant-ID
   public-url: ${PUBLIC_URL:https://57af-84-144-71-117.ngrok-free.app}
+  obp:
+    consumer-key: ${OBP_CONSUMER_KEY:your-consumer-key}
+    username: ${OBP_USERNAME:your-username}
+    password: ${OBP_PASSWORD:your-password}
 ---
 # ── Profile: stripe ───────────────────────────────────────────
 ---
