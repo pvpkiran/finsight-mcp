@@ -28,7 +28,7 @@ import java.util.Map;
  * Activated with the 'obp' Spring profile.
  */
 @Component
-@Profile("obp")
+@Profile("prod")
 @Slf4j
 public class ObpOpenBankingAdapter implements OpenBankingPort {
 

@@ -38,7 +38,7 @@ import java.util.Map;
  * Active when Spring profile "pgvector" is set.
  */
 @Component
-@Profile("pgvector")
+@Profile("prod")
 @RequiredArgsConstructor
 @Slf4j
 public class PgVectorFraudAdapter implements FraudDataPort {

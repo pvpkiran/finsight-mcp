@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
  * Wires JPA repositories, Redis template, and enables transactions.
  */
 @Configuration
-@Profile("local")
+@Profile("local | prod")
 @EnableJpaRepositories(basePackages = {
         "com.finsight.infra",
         "com.finsight.adapter.pgvector"

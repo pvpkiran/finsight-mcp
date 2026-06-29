@@ -20,7 +20,7 @@ import java.util.List;
  * Uses nomic-embed-text to generate real 768-dim vectors.
  */
 @Component
-@Profile("pgvector")
+@Profile("prod")
 @RequiredArgsConstructor
 @Slf4j
 public class FraudDataSeeder {

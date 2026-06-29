@@ -12,6 +12,6 @@ import java.util.UUID;
  * The append-only constraint is enforced at the DB level too.
  */
 @Repository
-@Profile("!mock")
+@Profile("local | prod")
 public interface AuditEventRepository extends JpaRepository<AuditEventEntity, UUID> {
 }

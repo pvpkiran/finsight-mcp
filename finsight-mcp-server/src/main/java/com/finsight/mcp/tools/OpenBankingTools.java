@@ -25,10 +25,10 @@ public class OpenBankingTools {
 
     @Tool(name = "listConnectedBanks",
             description = """
-              List banks available for open banking connection in a given country.
-              Returns bank name, BIC, and available transaction history depth.
-              Use this when asked which banks are supported or available to connect.
-              """)
+                    List banks available for open banking connection in a given country.
+                    Returns bank name, BIC, and available transaction history depth.
+                    Use this when asked which banks are supported or available to connect.
+                    """)
     @PreAuthorize("hasAuthority('SCOPE_banking:read')")
     public List<BankInfoResult> listConnectedBanks(
             @ToolParam(description = "ISO 3166-1 alpha-2 country code, e.g. 'DE', 'GB'")
@@ -43,11 +43,12 @@ public class OpenBankingTools {
 
     @Tool(name = "fetchAccountData",
             description = """
-              Fetch bank account data for a consented account via PSD2.
-              Returns account details, available balance, booked balance, and consent status.
-              Requires valid user consent. Will return an error if consent has expired or been revoked.
-              Use this when asked about account balances or account details.
-              """)
+                    Fetch bank account data for a consented account via PSD2.
+                    Returns account details, available balance, booked balance, and consent status.
+                    Requires valid user consent. Will return an error if consent has expired or been revoked.
+                    Use this when asked about account balances or account details.
+                    Account ID format: 'acc-de-001' (mock) or 'bankId/accountId' e.g. 'test-bank/fgarcia_account1' (OBP).
+                    """)
     @PreAuthorize("hasAuthority('SCOPE_banking:read')")
     public AccountResult fetchAccountData(
             @ToolParam(description = "Account ID to fetch, e.g. 'acc-de-001'")
@@ -60,10 +61,11 @@ public class OpenBankingTools {
 
     @Tool(name = "fetchAllAccounts",
             description = """
-              Fetch all bank accounts for a given open banking requisition/consent.
-              Returns a list of accounts with balances and consent status.
-              Use this when asked to show all connected accounts for a user.
-              """)
+                    Fetch all bank accounts for a given open banking requisition or bank.
+                    Returns a list of accounts with balances and consent status.
+                    Use this when asked to show all connected accounts for a user.
+                    Requisition ID format: 'req-demo-001' (mock) or bank ID e.g. 'test-bank' (OBP sandbox).
+                    """)
     @PreAuthorize("hasAuthority('SCOPE_banking:read')")
     public List<AccountResult> fetchAllAccounts(
             @ToolParam(description = "Requisition ID, e.g. 'req-demo-001'")
@@ -78,11 +80,11 @@ public class OpenBankingTools {
 
     @Tool(name = "checkConsent",
             description = """
-              Check the open banking consent status for an account.
-              Returns whether consent is VALID, EXPIRED, REVOKED, or PENDING,
-              and when it expires.
-              Use this before fetching account data, or when asked about consent status.
-              """)
+                    Check the open banking consent status for an account.
+                    Returns whether consent is VALID, EXPIRED, REVOKED, or PENDING,
+                    and when it expires.
+                    Use this before fetching account data, or when asked about consent status.
+                    """)
     @PreAuthorize("hasAuthority('SCOPE_banking:read')")
     public ConsentResult checkConsent(
             @ToolParam(description = "Account ID to check consent for, e.g. 'acc-de-001'")
@@ -103,7 +105,8 @@ public class OpenBankingTools {
 
     public record BankInfoResult(
             String id, String name, String bic,
-            String countryCode, int transactionHistoryDays) {}
+            String countryCode, int transactionHistoryDays) {
+    }
 
     public record AccountResult(
             String accountId,
@@ -138,5 +141,6 @@ public class OpenBankingTools {
 
     public record ConsentResult(
             String accountId, String status,
-            String expiresAt, List<String> grantedPermissions) {}
+            String expiresAt, List<String> grantedPermissions) {
+    }
 }

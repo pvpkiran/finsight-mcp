@@ -1,68 +1,12 @@
 # ─────────────────────────────────────────────────────────────
-#  FinSight MCP Server — application configuration
+#  FinSight MCP Server — base configuration
+#  Profile-specific config in application-local.yml / application-prod.yml
 # ─────────────────────────────────────────────────────────────
 
 spring:
   application:
     name: finsight-mcp
 
-  datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:finsight}
-    username: ${DB_USER:finsight}
-    password: ${DB_PASSWORD:finsight_secret}
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 2
-      connection-timeout: 30000
-      pool-name: finsight-hikari
-
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    open-in-view: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: false
-
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
-    baseline-on-migrate: false
-    validate-on-migrate: true
-
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:redis_secret}
-      timeout: 2000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 4
-
-  kafka:
-    bootstrap-servers: ${KAFKA_SERVERS:localhost:29092}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      acks: all
-      retries: 3
-    consumer:
-      group-id: finsight-mcp
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "com.finsight.*"
-
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: https://8fb0-84-144-71-232.ngrok-free.app/realms/finsight
-          jwk-set-uri: http://localhost:8180/realms/finsight/protocol/openid-connect/certs
   ai:
     mcp:
       server:
@@ -110,47 +54,8 @@ finsight:
     enabled: true
   tenant:
     header: X-Tenant-ID
-  public-url: ${PUBLIC_URL:https://57af-84-144-71-117.ngrok-free.app}
+  # OBP credentials — used in prod profile only
   obp:
     consumer-key: ${OBP_CONSUMER_KEY:your-consumer-key}
     username: ${OBP_USERNAME:your-username}
     password: ${OBP_PASSWORD:your-password}
----
-# ── Profile: stripe ───────────────────────────────────────────
----
-spring:
-  config:
-    activate:
-      on-profile: stripe
-
-finsight:
-  stripe:
-    api-key: ${STRIPE_API_KEY}
-    webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
-
----
-# ── Profile: pgvector ─────────────────────────────────────────
----
-spring:
-  config:
-    activate:
-      on-profile: pgvector
-
-  ai:
-    ollama:
-      base-url: http://localhost:11434
-      embedding:
-        model: nomic-embed-text
-
----
-# ── Profile: claude ─────────────────────────────────────────
----
-spring:
-  config:
-    activate:
-      on-profile: claude
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: https://8fb0-84-144-71-232.ngrok-free.app/realms/finsight/protocol/openid-connect/certs

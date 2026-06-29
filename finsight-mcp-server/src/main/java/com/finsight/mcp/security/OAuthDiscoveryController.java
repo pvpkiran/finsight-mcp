@@ -40,7 +40,7 @@ public class OAuthDiscoveryController {
     @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
     private String issuerUri;
 
-    @Value("${finsight.public-url:https://57af-84-144-71-117.ngrok-free.app}")
+    @Value("${finsight.public-url}")
     private String publicUrl;
 
     private final RestClient restClient = RestClient.create();

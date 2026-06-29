@@ -1,16 +1,24 @@
 # ─────────────────────────────────────────────────────────────
-#  FinSight MCP — local profile
+#  FinSight MCP — prod profile
 #
 #  Real infrastructure: PostgreSQL, Redis, Kafka, Flyway
-#  Mock adapters: payment, fraud, open banking
-#  JWK validation: localhost Keycloak
+#  Real adapters: Stripe payments, pgvector+Ollama fraud, OBP open banking
+#  JWK validation: Keycloak via ngrok (for Claude Desktop OAuth)
 #
-#  Use for: make mcp-test-* targets (no ngrok needed)
+#  Prerequisites:
+#    - ngrok tunnels running for FinSight and Keycloak
+#    - FINSIGHT_PUBLIC_URL env var set to FinSight ngrok URL
+#    - KEYCLOAK_PUBLIC_URL env var set to Keycloak ngrok URL
+#    - STRIPE_API_KEY env var set
+#    - OBP_CONSUMER_KEY, OBP_USERNAME, OBP_PASSWORD env vars set
+#    - Ollama running with nomic-embed-text model
+#
+#  Use for: Claude Desktop connection, Stripe sandbox testing
 #
 #  Start with:
-#    make app
+#    make app-prod
 #  Or:
-#    ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+#    ./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
 # ─────────────────────────────────────────────────────────────
 
 spring:
@@ -74,8 +82,19 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          # Tokens issued by local Keycloak
-          issuer-uri: ${KEYCLOAK_PUBLIC_URL:http://localhost:8180}/realms/finsight
+          # Tokens issued by Keycloak via ngrok — issuer claim must match ngrok URL
+          issuer-uri: ${KEYCLOAK_PUBLIC_URL:https://acc1-84-144-71-232.ngrok-free.app}/realms/finsight
+          # Fetch JWKs from localhost — no ngrok dependency for key validation
           jwk-set-uri: http://localhost:8180/realms/finsight/protocol/openid-connect/certs
+
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      embedding:
+        model: nomic-embed-text
+
 finsight:
-  public-url: http://localhost:8080
+  public-url: ${FINSIGHT_PUBLIC_URL:https://5bd9-84-144-71-232.ngrok-free.app}
+  stripe:
+    api-key: ${STRIPE_API_KEY}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:}

@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Pre-seeded with realistic demo transactions for MCP tool testing.
  */
 @Component
-@Profile("!stripe")
+@Profile("local")
 public class MockPaymentAdapter implements PaymentPort {
 
     private final Map<String, Transaction> transactions = new ConcurrentHashMap<>();

@@ -25,7 +25,7 @@ import java.util.Optional;
  * returns the cached response immediately without re-executing.
  */
 @Component
-@Profile("local")
+@Profile("local | prod")
 @RequiredArgsConstructor
 @Slf4j
 public class RedisIdempotencyAdapter implements IdempotencyPort {

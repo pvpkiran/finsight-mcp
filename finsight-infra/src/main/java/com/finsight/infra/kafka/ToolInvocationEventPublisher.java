@@ -19,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
  * the MCP tool response. Fire and forget with error logging.
  */
 @Component
-@Profile("!mock")
+@Profile("local | prod")
 @RequiredArgsConstructor
 @Slf4j
 public class ToolInvocationEventPublisher {

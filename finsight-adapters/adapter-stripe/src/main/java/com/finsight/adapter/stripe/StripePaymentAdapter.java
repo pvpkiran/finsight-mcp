@@ -40,7 +40,7 @@ import java.util.Optional;
  * We keep intelligent routing logic here but use real Stripe fee data.
  */
 @Component
-@Profile("stripe")
+@Profile("prod")
 @Slf4j
 public class StripePaymentAdapter implements PaymentPort {
 

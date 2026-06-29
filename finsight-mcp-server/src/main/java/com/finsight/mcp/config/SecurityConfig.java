@@ -32,7 +32,7 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Value("${finsight.public-url:https://57af-84-144-71-117.ngrok-free.app}")
+    @Value("${finsight.public-url}")
     private String publicUrl;
 
     private final TenantContextFilter tenantContextFilter;

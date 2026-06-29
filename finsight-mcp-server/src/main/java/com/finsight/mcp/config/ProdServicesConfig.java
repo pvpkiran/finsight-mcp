@@ -1,8 +1,8 @@
 package com.finsight.mcp.config;
 
-import com.finsight.adapter.mock.fraud.MockFraudAdapter;
-import com.finsight.adapter.mock.payment.MockPaymentAdapter;
 import com.finsight.adapter.obp.ObpOpenBankingAdapter;
+import com.finsight.adapter.pgvector.PgVectorFraudAdapter;
+import com.finsight.adapter.stripe.StripePaymentAdapter;
 import com.finsight.core.service.FraudService;
 import com.finsight.core.service.OpenBankingService;
 import com.finsight.core.service.PaymentService;
@@ -11,20 +11,25 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 /**
- * Service wiring for 'obp' profile.
- * Real OBP open banking adapter, mock payment and fraud.
+ * Full production stack — all real adapters.
+ * Stripe payments + pgvector AI fraud scoring + OBP open banking.
+ *
+ * Requires:
+ *   - STRIPE_API_KEY env var
+ *   - OBP_CONSUMER_KEY, OBP_USERNAME, OBP_PASSWORD env vars
+ *   - Ollama running with nomic-embed-text model
  */
 @Configuration
-@Profile("obp & !stripe & !pgvector")
-public class ObpServicesConfig {
+@Profile("prod")
+public class ProdServicesConfig {
 
     @Bean
-    public PaymentService paymentService(MockPaymentAdapter adapter) {
+    public PaymentService paymentService(StripePaymentAdapter adapter) {
         return new PaymentService(adapter);
     }
 
     @Bean
-    public FraudService fraudService(MockFraudAdapter adapter) {
+    public FraudService fraudService(PgVectorFraudAdapter adapter) {
         return new FraudService(adapter);
     }
 

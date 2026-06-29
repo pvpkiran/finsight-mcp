@@ -61,7 +61,7 @@ class ToolAuditAspectIT extends AbstractIntegrationTest {
     void shouldHaveFlywayMigrationsApplied() {
         // Verify all 5 migrations ran
         Integer migrationCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM finsight.flyway_schema_history WHERE success = true",
+                "SELECT COUNT(*) FROM flyway_schema_history WHERE success = true",
                 Integer.class);
 
         assertThat(migrationCount).isGreaterThanOrEqualTo(5);
