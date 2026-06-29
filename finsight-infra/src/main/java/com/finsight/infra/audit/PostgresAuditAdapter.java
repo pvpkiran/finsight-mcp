@@ -10,7 +10,7 @@ import java.util.Optional;
 
 /**
  * PostgreSQL-backed implementation of AuditPort.
- * Active under "local" and "stripe" profiles.
+ * Active under "local" and "prod" profiles.
  * Writes immutable audit records to audit.tool_invocations.
  *
  * Uses @Transactional with propagation REQUIRES_NEW so audit

@@ -133,7 +133,7 @@ public class MockFraudAdapter implements FraudDataPort {
 
     @Override
     public void storeEmbedding(TransactionId id, TenantId tenantId, float[] embedding) {
-        // No-op in mock — pgvector not available in mock profile
+        // No-op in mock — pgvector only available in prod profile
     }
 
     private FraudScore buildMockHistoricalScore(String txnId, double score, FraudRiskLevel level) {
