@@ -21,13 +21,15 @@ FinSight MCP gives AI agents like Claude Desktop 11 financial tools across three
 ---
 
 ## Architecture
-![FinSight MCP architecture](architecture.svg)
+
+![FinSight MCP architecture](docs/architecture.svg)
 
 **Key design decisions:**
 - **Hexagonal architecture** — domain logic is completely isolated from adapters. Swap `MockPaymentAdapter` → `StripePaymentAdapter` by changing one Spring profile.
 - **AOP-based audit** — `ToolAuditAspect` intercepts every `@Tool` method for idempotency, audit logging, and Kafka event publishing without touching tool code.
 - **OAuth 2.1 with PKCE** — Claude Desktop authenticates via Keycloak using the full authorization code flow. Token proxy strips RFC 8707 `resource` parameter (not yet supported by Keycloak).
 - **pgvector AI fraud** — Ollama generates 768-dimension embeddings; pgvector cosine similarity finds historical fraud patterns.
+- **Distributed tracing** — OpenTelemetry spans exported to Jaeger via OTLP; traceId/spanId propagated in every log line.
 
 ---
 
@@ -94,7 +96,7 @@ cd finsight-mcp
 make infra
 ```
 
-Starts PostgreSQL, Redis, Kafka, Keycloak. Waits until all services are healthy (~60s for Keycloak).
+Starts PostgreSQL, Redis, Kafka, Keycloak, Jaeger, and Prometheus. Waits until all services are healthy (~60s for Keycloak).
 
 ### 3. Start app (local profile — mock adapters)
 
@@ -142,7 +144,7 @@ ngrok http 8080
 ngrok http 8180
 ```
 
-(Any equivalent — Cloudflare Tunnel, a reverse-proxied VPS, a real deployed domain — works the same way; just put that URL in the env vars below instead.)
+(Any equivalent — Cloudflare Tunnel, a reverse-proxied VPS, a real deployed domain — works the same way; just put that URL in the env vars instead.)
 
 Update env vars with the new URLs, then restart Keycloak so it advertises the correct issuer:
 
@@ -225,10 +227,12 @@ make app-prod
 
 | Service | Port | Purpose |
 |---|---|---|
-| PostgreSQL | 5432 | Audit logs, transaction embeddings (pgvector) |
+| PostgreSQL | 5432 | Audit logs, pgvector transaction embeddings, Keycloak state |
 | Redis | 6379 | Idempotency cache (24h TTL) |
-| Kafka | 29092 | Tool invocation events |
+| Kafka | 29092 | Tool invocation event stream |
 | Keycloak | 8180 | OAuth 2.1 authorization server |
+| Jaeger | 16686 | Distributed tracing UI |
+| Prometheus | 9090 | Metrics scraper |
 | Kafka UI | 8090 | Browse Kafka topics |
 | Redis UI | 8001 | Browse Redis keys |
 | Spring Boot | 8080 | MCP server |
@@ -246,6 +250,10 @@ make app-prod
 
 **Keycloak** is the OAuth 2.1 authorization server. It issues scoped JWTs (`payment:read`, `fraud:read`, `banking:read`) that `SecurityConfig` enforces per-tool via `@PreAuthorize`, and it's also where the `tenant_id` claim originates (via a custom protocol mapper), which `TenantContextFilter` reads on every request to scope all data access.
 
+**Jaeger** receives OpenTelemetry spans via OTLP HTTP (`localhost:4318`). Every inbound MCP request generates a trace with child spans for the security filter, AOP audit aspect, adapter call, and any outbound HTTP (Stripe/OBP). The traceId appears in every log line, making it trivial to jump from a log entry to the full request trace. View traces at `http://localhost:16686`.
+
+**Prometheus** scrapes `/actuator/prometheus` every 15 seconds. All Micrometer metrics are available — HTTP request counts/latency by endpoint, JVM memory and GC stats, Kafka producer metrics, HikariCP connection pool, and custom `@Timed`/`@Counted` annotations. View metrics at `http://localhost:9090`.
+
 ---
 
 ## Security
@@ -255,6 +263,18 @@ make app-prod
 - **Multi-tenancy** — `tenant_id` claim extracted from JWT, all data scoped per tenant
 - **Idempotency** — Redis prevents duplicate tool executions from agent retry loops
 - **Audit trail** — every tool call logged to PostgreSQL with tenant, duration, status
+
+---
+
+## Observability
+
+| Signal | Tool | How to access |
+|---|---|---|
+| Traces | Jaeger | `http://localhost:16686` — select service `finsight-mcp` |
+| Metrics | Prometheus | `http://localhost:9090` — query e.g. `http_server_requests_seconds_count` |
+| Logs | Console/Logback | Log pattern includes `[traceId,spanId]` on every line |
+
+Traces and logs are correlated via traceId — every log line includes the active traceId, so you can search Jaeger by traceId to jump from a log entry to its full request trace.
 
 ---
 
@@ -300,7 +320,7 @@ make stripe-fraud-full                   # create → score fraud → explain si
 ## Makefile Reference
 
 ```bash
-make infra              # Start all infrastructure
+make infra              # Start all infrastructure (PostgreSQL, Redis, Kafka, Keycloak, Jaeger, Prometheus)
 make infra-down         # Stop all services
 make infra-clean        # Wipe all volumes
 
@@ -332,6 +352,7 @@ make mcp-test-all-accounts REQUISITION_ID=test-bank
 | Database | PostgreSQL 16 + pgvector extension |
 | Cache | Redis 7 |
 | Messaging | Apache Kafka |
+| Observability | OpenTelemetry, Jaeger, Prometheus, Micrometer |
 | AI/Embeddings | Ollama + nomic-embed-text (768 dims) |
 | Payments | Stripe API |
 | Open Banking | Open Bank Project sandbox |

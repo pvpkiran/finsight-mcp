@@ -174,7 +174,7 @@ services:
     networks:
       - finsight-net
 
-  # ── Jaeger/Tracing) ──────────────────────────────────────────────────────────
+  # ── Jaeger/Tracing──────────────────────────────────────────────────────────
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: finsight-jaeger
@@ -183,5 +183,17 @@ services:
       - "4318:4318"     # OTLP HTTP receiver
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
+    networks:
+      - finsight-net
+
+  # ── Prometheus/Metrics ──────────────────────────────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: finsight-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./finsight-infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
       - finsight-net
