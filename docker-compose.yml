@@ -125,7 +125,7 @@ services:
       start-dev
       --import-realm
       --http-port=8180
-      --hostname=${KEYCLOAK_PUBLIC_URL:-https://acc1-84-144-71-232.ngrok-free.app}
+      --hostname=${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}
       --proxy-headers=xforwarded
     environment:
       KEYCLOAK_ADMIN: admin
@@ -171,5 +171,17 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+    networks:
+      - finsight-net
+
+  # ── Jaeger/Tracing) ──────────────────────────────────────────────────────────
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: finsight-jaeger
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4318:4318"     # OTLP HTTP receiver
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
     networks:
       - finsight-net

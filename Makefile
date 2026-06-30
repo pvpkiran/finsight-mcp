@@ -54,7 +54,7 @@ infra:
 	@echo "✓  Kafka ready"
 	@docker-compose up -d kafka-init
 	@sleep 5
-	@docker-compose up -d keycloak kafka-ui redis-ui
+	@docker-compose up -d keycloak kafka-ui redis-ui jaeger
 	@echo "⏳ Waiting for Keycloak (~60s)..."
 	@until curl -sf http://localhost:9000/health/ready > /dev/null 2>&1; do sleep 5; done
 	@echo "✓  Keycloak ready"
@@ -62,7 +62,7 @@ infra:
 	@echo "✅ All services running!"
 	@echo "  PostgreSQL → localhost:5432  |  Redis → localhost:6379  |  Kafka → localhost:29092"
 	@echo "  Keycloak   → http://localhost:8180 (admin/admin_secret)"
-	@echo "  Kafka UI   → http://localhost:8090  |  Redis UI → http://localhost:8001"
+	@echo "  Kafka UI   → http://localhost:8090  |  Redis UI → http://localhost:8001  |  Jaeger UI → http://localhost:16686"
 
 ## Stop all infrastructure
 infra-down:
@@ -552,6 +552,7 @@ help:
 	@echo "    Keycloak → http://localhost:8180  (admin/admin_secret)"
 	@echo "    Kafka UI → http://localhost:8090"
 	@echo "    Redis UI → http://localhost:8001  (host=redis port=6379 pass=redis_secret)"
+	@echo "    Jaeger UI → http://localhost:16686  (distributed traces)"
 	@echo ""
 	@echo "  Tokens (for local profile testing):"
 	@echo "    make token-full      JWT with all scopes (payment+fraud+banking)"

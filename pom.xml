@@ -36,7 +36,6 @@
         <flyway.version>10.15.0</flyway.version>
         <testcontainers.version>1.21.3</testcontainers.version>
         <mapstruct.version>1.6.2</mapstruct.version>
-        <jspecify.version>1.0.0</jspecify.version>
     </properties>
 
     <!-- ── Dependency management (versions declared once here) ───────── -->
@@ -108,12 +107,6 @@
                 <artifactId>mapstruct</artifactId>
                 <version>${mapstruct.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.jspecify</groupId>
-                <artifactId>jspecify</artifactId>
-                <version>${jspecify.version}</version>
-            </dependency>
-
         </dependencies>
     </dependencyManagement>
 
@@ -123,10 +116,6 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.jspecify</groupId>
-            <artifactId>jspecify</artifactId>
         </dependency>
 
         <!-- Test — every module gets JUnit 5, Mockito, AssertJ -->
