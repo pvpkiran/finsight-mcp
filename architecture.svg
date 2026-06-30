@@ -1,0 +1,127 @@
+<svg width="680" height="760" viewBox="0 0 680 760" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>FinSight MCP architecture</title>
+<desc>Claude Desktop connects via OAuth 2.1 to a Spring Boot MCP server exposing payment, fraud, and open banking tools. Tool calls pass through an audit aspect into domain services, which talk to outbound ports backed by either mock adapters (local profile) or Stripe, pgvector with Ollama, and Open Bank Project (prod profile). A separate infrastructure layer provides audit logging, idempotency caching, and event publishing via PostgreSQL, Redis, and Kafka.</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5f5e5a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+</defs>
+<rect width="680" height="760" fill="#ffffff"/>
+
+<g>
+<rect x="260" y="20" width="160" height="44" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+<text x="340" y="42" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#2C2C2A">Claude Desktop</text>
+</g>
+<text x="430" y="38" font-family="sans-serif" font-size="12" fill="#5F5E5A">OAuth 2.1</text>
+<text x="430" y="52" font-family="sans-serif" font-size="12" fill="#5F5E5A">+ PKCE</text>
+<line x1="340" y1="64" x2="340" y2="98" stroke="#5f5e5a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<g>
+<rect x="40" y="98" width="600" height="220" rx="20" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+<text x="60" y="124" font-family="sans-serif" font-size="14" font-weight="500" fill="#26215C">Spring Boot MCP server</text>
+<text x="60" y="140" font-family="sans-serif" font-size="12" fill="#534AB7">Streamable HTTP, scoped JWT per tool</text>
+</g>
+
+<g>
+<rect x="64" y="156" width="170" height="56" rx="12" fill="#CECBF6" stroke="#534AB7" stroke-width="0.5"/>
+<text x="149" y="176" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#26215C">Payment tools</text>
+<text x="149" y="196" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#3C3489">4 tools</text>
+</g>
+<g>
+<rect x="255" y="156" width="170" height="56" rx="12" fill="#CECBF6" stroke="#534AB7" stroke-width="0.5"/>
+<text x="340" y="176" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#26215C">Fraud tools</text>
+<text x="340" y="196" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#3C3489">3 tools</text>
+</g>
+<g>
+<rect x="446" y="156" width="170" height="56" rx="12" fill="#CECBF6" stroke="#534AB7" stroke-width="0.5"/>
+<text x="531" y="176" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#26215C">Open banking tools</text>
+<text x="531" y="196" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#3C3489">4 tools</text>
+</g>
+
+<line x1="149" y1="212" x2="320" y2="232" stroke="#5f5e5a" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="340" y1="212" x2="330" y2="232" stroke="#5f5e5a" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="531" y1="212" x2="350" y2="232" stroke="#5f5e5a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<g>
+<rect x="200" y="232" width="280" height="44" rx="8" fill="#F5C4B3" stroke="#993C1D" stroke-width="0.5"/>
+<text x="340" y="248" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#4A1B0C">ToolAuditAspect</text>
+<text x="340" y="265" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#712B13">Idempotency, audit, Kafka events</text>
+</g>
+<line x1="340" y1="276" x2="340" y2="298" stroke="#5f5e5a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<g>
+<rect x="120" y="298" width="440" height="40" rx="8" fill="#F5C4B3" stroke="#993C1D" stroke-width="0.5"/>
+<text x="340" y="318" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#4A1B0C">Domain services (hexagonal core)</text>
+</g>
+
+<line x1="200" y1="338" x2="160" y2="370" stroke="#5f5e5a" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="480" y1="338" x2="520" y2="370" stroke="#5f5e5a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<text x="40" y="356" font-family="sans-serif" font-size="14" font-weight="500" fill="#2C2C2A">Outbound ports</text>
+<text x="500" y="356" font-family="sans-serif" font-size="14" font-weight="500" fill="#2C2C2A">Infrastructure</text>
+
+<g>
+<rect x="40" y="370" width="280" height="260" rx="20" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="60" y="396" font-family="sans-serif" font-size="14" font-weight="500" fill="#04342C">Adapters</text>
+<text x="60" y="412" font-family="sans-serif" font-size="12" fill="#0F6E56">Swapped by Spring profile</text>
+</g>
+
+<g>
+<rect x="60" y="426" width="240" height="32" rx="8" fill="#9FE1CB" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="180" y="442" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#04342C">local — mock (in-memory)</text>
+</g>
+<g>
+<rect x="60" y="468" width="240" height="32" rx="8" fill="#9FE1CB" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="180" y="484" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#04342C">prod — Stripe payments</text>
+</g>
+<g>
+<rect x="60" y="508" width="240" height="32" rx="8" fill="#9FE1CB" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="180" y="524" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#04342C">prod — pgvector + Ollama fraud</text>
+</g>
+<g>
+<rect x="60" y="548" width="240" height="32" rx="8" fill="#9FE1CB" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="180" y="564" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#04342C">prod — Open Bank Project</text>
+</g>
+
+<g>
+<rect x="380" y="370" width="260" height="260" rx="20" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="400" y="396" font-family="sans-serif" font-size="14" font-weight="500" fill="#042C53">Real infrastructure</text>
+<text x="400" y="412" font-family="sans-serif" font-size="12" fill="#185FA5">Both profiles</text>
+</g>
+
+<g>
+<rect x="400" y="426" width="220" height="48" rx="8" fill="#B5D4F4" stroke="#185FA5" stroke-width="0.5"/>
+<text x="510" y="444" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#042C53">PostgreSQL</text>
+<text x="510" y="462" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#0C447C">audit log + pgvector embeddings</text>
+</g>
+<g>
+<rect x="400" y="482" width="220" height="48" rx="8" fill="#B5D4F4" stroke="#185FA5" stroke-width="0.5"/>
+<text x="510" y="500" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#042C53">Redis</text>
+<text x="510" y="518" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#0C447C">idempotency cache, 24h TTL</text>
+</g>
+<g>
+<rect x="400" y="538" width="220" height="48" rx="8" fill="#B5D4F4" stroke="#185FA5" stroke-width="0.5"/>
+<text x="510" y="556" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#042C53">Kafka</text>
+<text x="510" y="574" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#0C447C">tool invocation events</text>
+</g>
+<g>
+<rect x="400" y="594" width="220" height="32" rx="8" fill="#B5D4F4" stroke="#185FA5" stroke-width="0.5"/>
+<text x="510" y="610" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#042C53">Keycloak — issues scoped JWT</text>
+</g>
+
+<text x="180" y="654" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#5F5E5A">Real external APIs (prod profile)</text>
+<g>
+<rect x="60" y="664" width="74" height="36" rx="8" fill="#F5C4B3" stroke="#993C1D" stroke-width="0.5"/>
+<text x="97" y="682" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#4A1B0C">Stripe</text>
+</g>
+<g>
+<rect x="146" y="664" width="74" height="36" rx="8" fill="#F5C4B3" stroke="#993C1D" stroke-width="0.5"/>
+<text x="183" y="682" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#4A1B0C">Ollama</text>
+</g>
+<g>
+<rect x="232" y="664" width="106" height="36" rx="8" fill="#F5C4B3" stroke="#993C1D" stroke-width="0.5"/>
+<text x="285" y="682" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#4A1B0C">Open Bank Project</text>
+</g>
+
+<line x1="180" y1="630" x2="100" y2="664" stroke="#5f5e5a" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="180" y1="630" x2="183" y2="664" stroke="#5f5e5a" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="180" y1="630" x2="280" y2="664" stroke="#5f5e5a" stroke-width="1.5" marker-end="url(#arrow)"/>
+</svg>

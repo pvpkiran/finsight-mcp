@@ -21,7 +21,7 @@ FinSight MCP gives AI agents like Claude Desktop 11 financial tools across three
 ---
 
 ## Architecture
-
+![FinSight MCP architecture](architecture.svg)
 ```
 Claude Desktop
      │ OAuth 2.1 (PKCE)
@@ -41,8 +41,8 @@ Claude Desktop
 │  └──────┬───────────────────────────┬─────────────┘  │
 │         │                           │                │
 │  ┌──────▼──────┐            ┌───────▼──────┐         │
-│  │   Outbound Ports          │  Infra Ports│         │
-│  │  (interfaces)             │  Audit/Idem │         │
+│  │   Outbound Ports         │  Infra Ports │         │
+│  │  (interfaces)            │  Audit/Idem  │         │
 │  └──────┬──────┘            └───────┬──────┘         │
 └─────────┼────────────────────────────┼───────────────┘
           │                            │
