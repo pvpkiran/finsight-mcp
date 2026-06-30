@@ -22,40 +22,6 @@ FinSight MCP gives AI agents like Claude Desktop 11 financial tools across three
 
 ## Architecture
 ![FinSight MCP architecture](architecture.svg)
-```
-Claude Desktop
-     │ OAuth 2.1 (PKCE)
-     ▼
-┌──────────────────────────────────────────────────────┐
-│                  Spring Boot MCP Server              │
-│                                                      │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐   │
-│  │ PaymentTools │  │  FraudTools  │  │  Banking  │   │
-│  │              │  │              │  │   Tools   │   │
-│  └──────┬───────┘  └──────┬───────┘  └─────┬─────┘   │
-│         │ ToolAuditAspect (AOP)             │        │
-│         │ IdempotencyCache (Redis)          │        │
-│         │ KafkaEventPublisher               │        │
-│  ┌──────▼───────────────────────────────────▼─────┐  │
-│  │              Domain Services (Hexagonal)       │  │
-│  └──────┬───────────────────────────┬─────────────┘  │
-│         │                           │                │
-│  ┌──────▼──────┐            ┌───────▼──────┐         │
-│  │   Outbound Ports         │  Infra Ports │         │
-│  │  (interfaces)            │  Audit/Idem  │         │
-│  └──────┬──────┘            └───────┬──────┘         │
-└─────────┼────────────────────────────┼───────────────┘
-          │                            │
-    ┌─────▼──────┐              ┌──────▼──────┐
-    │  Adapters  │              │  PostgreSQL │
-    │  (local)   │              │  Redis      │
-    │  Mock      │              │  Kafka      │
-    │  (prod)    │              └─────────────┘
-    │  Stripe    │
-    │  pgvector  │
-    │  OBP       │
-    └────────────┘
-```
 
 **Key design decisions:**
 - **Hexagonal architecture** — domain logic is completely isolated from adapters. Swap `MockPaymentAdapter` → `StripePaymentAdapter` by changing one Spring profile.
